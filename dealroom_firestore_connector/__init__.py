@@ -361,7 +361,10 @@ def _validate_new_history_doc_payload(payload: dict):
     _validate_dealroomid(payload["dealroom_id"])
 
     # Validate that there is either a final_url and/or dealroom_id as a unique identifier
-    if not payload.get("final_url", None) and dealroom_id == _NOT_IN_DEALROOM_ENTITY_ID:
+    if not payload.get("final_url", None) and (
+        payload.get("dealroom_id", _NOT_IN_DEALROOM_ENTITY_ID)
+        == _NOT_IN_DEALROOM_ENTITY_ID
+    ):
         raise ValueError(
             "There is no unique identifier for this document. `final_url` & `dealroom_id` are empty."
         )
@@ -446,6 +449,7 @@ def set_history_doc_refs(
     # CREATE: If there are not available documents in history
     if count_history_refs == 0:
         # Add any default values to the payload
+        is_dealroom_id = str(finalurl_or_dealroomid).isnumeric()
         _payload = {
             "dealroom_id": finalurl_or_dealroomid
             if is_dealroom_id
