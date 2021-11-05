@@ -1,6 +1,7 @@
 cachetools==4.2.1
 certifi==2020.12.5
 chardet==4.0.0
+assertpy==1.1
 dealroom-urlextract @ git+https://github.com/dealroom/data-urlextract@main
 filelock==3.0.12
 google-api-core==1.26.0

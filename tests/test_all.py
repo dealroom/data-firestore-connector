@@ -1,7 +1,7 @@
 import random
 import string
 from random import randint
-
+from assertpy import assert_that
 import dealroom_firestore_connector as fc
 import pytest
 from dealroom_firestore_connector.status_codes import ERROR, SUCCESS
@@ -112,3 +112,35 @@ def test_set_history_doc_refs_as_deleted():
     res = fc.set_history_doc_refs(db, {"dealroom_id": "-2"}, EXISTING_DOC_FINAL_URL)
 
     assert res == SUCCESS
+
+
+@pytest.mark.parametrize(
+    "payload,identifier,expected",
+    [
+        ({}, 123, ("", 123)),
+        ({}, "dealroom.co", ("dealroom.co", -1)),
+        (
+            {"dealroom_id": 123},
+            "dealroom.co",
+            ("dealroom.co", 123),
+        ),
+        (
+            {"final_url": "dealroom.co"},
+            123,
+            ("dealroom.co", 123),
+        ),
+        (
+            {"final_url": "dealroom.co", "dealroom_id": 123},
+            None,
+            ("dealroom.co", 123),
+        ),
+    ],
+)
+def test___get_final_url_and_dealroom_id(payload, identifier, expected):
+    """It should give valid output for input"""
+    assert_that(
+        fc._get_final_url_and_dealroom_id(
+            payload,
+            identifier,
+        )
+    ).is_equal_to(expected)

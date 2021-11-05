@@ -380,10 +380,14 @@ def _validate_update_history_doc_payload(payload: dict):
         _validate_dealroomid(payload["dealroom_id"])
 
 
-def _get_final_url_and_dealroom_id(payload: dict, finalurl_or_dealroomid: str) -> tuple:
+def _get_final_url_and_dealroom_id(
+    payload: dict, finalurl_or_dealroomid: str = None
+) -> tuple:
     final_url, dealroom_id = "", _NOT_IN_DEALROOM_ENTITY_ID
-    is_dealroom_id = str(finalurl_or_dealroomid).isnumeric()
-    if is_dealroom_id:
+    if not finalurl_or_dealroomid:
+        final_url = payload.get("final_url", None) or final_url
+        dealroom_id = payload.get("dealroom_id", None) or dealroom_id
+    elif is_dealroom_id := str(finalurl_or_dealroomid).isnumeric():
         dealroom_id = finalurl_or_dealroomid
         final_url = payload.get("final_url", None) or final_url
     else:
