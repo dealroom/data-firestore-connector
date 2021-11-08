@@ -383,10 +383,15 @@ def _validate_update_history_doc_payload(payload: dict):
 def _get_final_url_and_dealroom_id(
     payload: dict, finalurl_or_dealroomid: str = None
 ) -> tuple:
+    """Retrieve the final_url & dealroom_id identifiers,
+    from `payload` and/or `finalurl_or_dealroomid`"""
+
     final_url, dealroom_id = "", _NOT_IN_DEALROOM_ENTITY_ID
+    # If finalurl_or_dealroomid is not set then try to find them in payload
     if not finalurl_or_dealroomid:
         final_url = payload.get("final_url", None) or final_url
         dealroom_id = payload.get("dealroom_id", None) or dealroom_id
+    # otherwise combine them
     elif is_dealroom_id := str(finalurl_or_dealroomid).isnumeric():
         dealroom_id = finalurl_or_dealroomid
         final_url = payload.get("final_url", None) or final_url
@@ -454,6 +459,7 @@ def set_history_doc_refs(
     if count_history_refs == 0:
         # Add any default values to the payload
         is_dealroom_id = str(finalurl_or_dealroomid).isnumeric()
+        # Set `dealroom_id` or `final_url` with a default value from the given identifier
         _payload = {
             "dealroom_id": finalurl_or_dealroomid
             if is_dealroom_id
