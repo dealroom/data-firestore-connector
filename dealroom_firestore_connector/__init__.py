@@ -361,7 +361,7 @@ def _validate_new_history_doc_payload(payload: dict):
     _validate_dealroomid(payload["dealroom_id"])
 
     # Validate that there is either a final_url and/or dealroom_id as a unique identifier
-    if not payload.get("final_url", None) and (
+    if not payload.get("final_url", "") and (
         payload.get("dealroom_id", _NOT_IN_DEALROOM_ENTITY_ID)
         == _NOT_IN_DEALROOM_ENTITY_ID
     ):
