@@ -54,7 +54,7 @@ class Batcher(firestore.WriteBatch):
     @_count_write
     def _update_last_edit(self, doc_ref):
         super().update(doc_ref, {"last_edit": datetime.now(timezone.utc)})
-    
+
     def _check_if_update_last_edit(self, doc_ref):
         """If the document reference points to the history collection
         then update its "last_edit" field to the currrent datetime. This

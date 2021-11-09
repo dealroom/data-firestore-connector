@@ -257,7 +257,8 @@ def get_history_doc_refs(
         >>> doc_refs = get_history_refs(db, "dealroom.co")
     """
 
-    if not final_url and not dealroom_id:
+    is_valid_dealroom_id = dealroom_id and int(dealroom_id) > 0
+    if not final_url and not is_valid_dealroom_id:
         raise ValueError(
             "Any of `final_url` or `dealroom_id` need to be used as a unique identifier"
         )
@@ -266,7 +267,7 @@ def get_history_doc_refs(
     result = {}
 
     # Add results for matched documents over `dealroom_id`
-    if dealroom_id:
+    if is_valid_dealroom_id:
         query_params = ["dealroom_id", "==", int(dealroom_id)]
         query = collection_ref.where(*query_params)
         docs = stream(query)
