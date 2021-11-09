@@ -34,7 +34,7 @@ def new_connection(project: str, credentials_path: str = None):
             return firestore.Client(project=project)
     except Exception as identifier:
         __log_exception(5, credentials_path, identifier, True)
-        #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+        # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
         return ERROR
 
 
@@ -59,8 +59,9 @@ def get(doc_ref, *args, **kwargs):
         except Exception as identifier:
             # log error
             __log_exception(3, doc_ref, identifier, True)
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             return ERROR
+
 
 def _update_last_edit(doc_ref):
     """If the document reference points to the history collection
@@ -73,6 +74,7 @@ def _update_last_edit(doc_ref):
     _path = doc_ref.path.split("/")
     if len(_path) == 2 and _path[0] == "history":
         doc_ref.update({"last_edit": datetime.now(timezone.utc)})
+
 
 def set(doc_ref, *args, **kwargs):
     """Create a new document in Firestore
@@ -103,7 +105,7 @@ def set(doc_ref, *args, **kwargs):
         except Exception as identifier:
             # log error
             __log_exception(4, doc_ref, identifier, True)
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             return ERROR
 
 
@@ -132,7 +134,7 @@ def update(doc_ref, *args, **kwargs):
         except Exception as identifier:
             # log error
             __log_exception(2, doc_ref, identifier, True)
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             return ERROR
 
 
@@ -157,7 +159,7 @@ def stream(collection_ref, *args, **kwargs):
         except Exception as identifier:
             # log error
             __log_exception(1, collection_ref, identifier, True)
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             return ERROR
 
 
@@ -191,7 +193,7 @@ def get_all(base_query, page_size=20000):
         query = query.limit(page_size)
         docs = stream(query)
         if docs == ERROR:
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             return ERROR
 
         results = [doc_snapshot for doc_snapshot in docs]
@@ -236,14 +238,16 @@ def collection_exists(collection_ref: CollectionReference):
 HISTORY_COLLECTION_PATH = "history"
 
 
-def get_history_doc_refs(db: firestore.Client, websiteurl_or_dealroomid: str):
+def get_history_doc_refs(
+    db: firestore.Client, final_url: str = None, dealroom_id: int = None
+):
     """Returns a DocumentReference based on the final_url field, current_related_urls or dealroom_id
     field.
 
     Args:
         db (firestore.Client): the client that will perform the operations.
-        websiteurl_or_dealroomid (str): either a domain or a dealroom ID. Query documents that match this parameter.
-
+        final_url (str): A domain. Query documents that match this parameter.
+        dealroom_id (int): A dealroom ID. Query documents that match this parameter.
     Returns:
         dict[DocumentReference]: a dictionary made of lists of document references matching the input parameter
             indicating if the match occured with the final_url field, current_related_urls or dealroom_id.
@@ -253,41 +257,50 @@ def get_history_doc_refs(db: firestore.Client, websiteurl_or_dealroomid: str):
         >>> doc_refs = get_history_refs(db, "dealroom.co")
     """
 
+    is_valid_dealroom_id = dealroom_id and int(dealroom_id) > 0
+    if not final_url and not is_valid_dealroom_id:
+        raise ValueError(
+            "Any of `final_url` or `dealroom_id` need to be used as a unique identifier"
+        )
+
     collection_ref = db.collection(HISTORY_COLLECTION_PATH)
     result = {}
 
-    if str(websiteurl_or_dealroomid).isnumeric():
-        query_params = ["dealroom_id", "==", int(websiteurl_or_dealroomid)]
+    # Add results for matched documents over `dealroom_id`
+    if is_valid_dealroom_id:
+        query_params = ["dealroom_id", "==", int(dealroom_id)]
         query = collection_ref.where(*query_params)
         docs = stream(query)
         if docs == ERROR:
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             logging.error("Couldn't stream query.")
             return ERROR
         result["dealroom_id"] = [doc.reference for doc in docs]
 
-        query_params = ["dealroom_id_old", "==", int(websiteurl_or_dealroomid)]
+        query_params = ["dealroom_id_old", "==", int(dealroom_id)]
         query = collection_ref.where(*query_params)
         docs = stream(query)
         if docs == ERROR:
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             logging.error("Couldn't stream query.")
             return ERROR
         result["dealroom_id_old"] = [doc.reference for doc in docs]
-    else:
+
+    # Add results for matched documents over `final_url`
+    if final_url:
         # Extract the final_url in the required format, so we can query the collection with the exact match.
         try:
-            website_url = extract(websiteurl_or_dealroomid)
+            website_url = extract(final_url)
         except:
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
-            logging.error(f"'final_url': {websiteurl_or_dealroomid} is not a valid url")
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            logging.error(f"'final_url': {final_url} is not a valid url")
             return ERROR
 
         query_params = ["final_url", "==", website_url]
         query = collection_ref.where(*query_params)
         docs = stream(query)
         if docs == ERROR:
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             logging.error("Couldn't stream query.")
             return ERROR
         result["final_url"] = [doc.reference for doc in docs]
@@ -296,7 +309,7 @@ def get_history_doc_refs(db: firestore.Client, websiteurl_or_dealroomid: str):
         query = collection_ref.where(*query_params)
         docs = stream(query)
         if docs == ERROR:
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             logging.error("Couldn't stream query.")
             return ERROR
         result["current_related_urls"] = [doc.reference for doc in docs]
@@ -348,6 +361,15 @@ def _validate_new_history_doc_payload(payload: dict):
 
     _validate_dealroomid(payload["dealroom_id"])
 
+    # Validate that there is either a final_url and/or dealroom_id as a unique identifier
+    if not payload.get("final_url", "") and (
+        payload.get("dealroom_id", _NOT_IN_DEALROOM_ENTITY_ID)
+        == _NOT_IN_DEALROOM_ENTITY_ID
+    ):
+        raise ValueError(
+            "There is no unique identifier for this document. `final_url` & `dealroom_id` are empty."
+        )
+
 
 def _validate_update_history_doc_payload(payload: dict):
     """Validate the required fields in the payload when updating"""
@@ -357,6 +379,28 @@ def _validate_update_history_doc_payload(payload: dict):
 
     if "dealroom_id" in payload:
         _validate_dealroomid(payload["dealroom_id"])
+
+
+def _get_final_url_and_dealroom_id(
+    payload: dict, finalurl_or_dealroomid: str = None
+) -> tuple:
+    """Retrieve the final_url & dealroom_id identifiers,
+    from `payload` and/or `finalurl_or_dealroomid`"""
+
+    final_url, dealroom_id = "", _NOT_IN_DEALROOM_ENTITY_ID
+    # If finalurl_or_dealroomid is not set then try to find them in payload
+    if not finalurl_or_dealroomid:
+        final_url = payload.get("final_url", None) or final_url
+        dealroom_id = payload.get("dealroom_id", None) or dealroom_id
+    # otherwise combine them
+    elif is_dealroom_id := str(finalurl_or_dealroomid).isnumeric():
+        dealroom_id = finalurl_or_dealroomid
+        final_url = payload.get("final_url", None) or final_url
+    else:
+        final_url = finalurl_or_dealroomid
+        dealroom_id = payload.get("dealroom_id", None) or dealroom_id
+
+    return final_url, dealroom_id
 
 
 def set_history_doc_refs(
@@ -379,13 +423,20 @@ def set_history_doc_refs(
 
     _payload = {**payload}
 
-    # If finalurl_or_dealroomid is not provided then a new document will be created.
-    history_refs = get_history_doc_refs(db, finalurl_or_dealroomid) if finalurl_or_dealroomid else {}
+    # If finalurl_or_dealroomid is not provided then a new document will be created,
+    # otherwise lookup for the document using both identifiers, final_url & dealroom_id
+    history_refs = {}
+    if finalurl_or_dealroomid:
+        final_url, dealroom_id = _get_final_url_and_dealroom_id(
+            payload, finalurl_or_dealroomid
+        )
+
+        history_refs = get_history_doc_refs(db, final_url, dealroom_id)
 
     operation_status_code = ERROR
 
     if history_refs == ERROR:
-        #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+        # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
         return ERROR
     if "dealroom_id" in history_refs and len(history_refs["dealroom_id"]) > 0:
         count_history_refs = len(history_refs["dealroom_id"])
@@ -396,24 +447,33 @@ def set_history_doc_refs(
     elif "final_url" in history_refs and len(history_refs["final_url"]) > 0:
         count_history_refs = len(history_refs["final_url"])
         key_found = "final_url"
-    elif "current_related_urls" in history_refs and len(history_refs["current_related_urls"]) > 0:
+    elif (
+        "current_related_urls" in history_refs
+        and len(history_refs["current_related_urls"]) > 0
+    ):
         count_history_refs = len(history_refs["current_related_urls"])
         key_found = "current_related_urls"
     else:
         count_history_refs = 0
+
     # CREATE: If there are not available documents in history
     if count_history_refs == 0:
         # Add any default values to the payload
+        is_dealroom_id = str(finalurl_or_dealroomid).isnumeric()
+        # Set `dealroom_id` or `final_url` with a default value from the given identifier
         _payload = {
-            "dealroom_id": _NOT_IN_DEALROOM_ENTITY_ID,
-            "final_url": "",
+            "dealroom_id": finalurl_or_dealroomid
+            if is_dealroom_id
+            else _NOT_IN_DEALROOM_ENTITY_ID,
+            "final_url": finalurl_or_dealroomid if not is_dealroom_id else "",
             **payload,
         }
+
         # Validate that the new document will have the minimum required fields
         try:
             _validate_new_history_doc_payload(_payload)
         except (ValueError, KeyError) as ex:
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             logging.error(ex)
             return ERROR
         history_ref = history_col.document()
@@ -424,7 +484,7 @@ def set_history_doc_refs(
         try:
             _validate_update_history_doc_payload(_payload)
         except ValueError as ex:
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             logging.error(ex)
             return ERROR
 
@@ -441,7 +501,6 @@ def set_history_doc_refs(
     if "dealroom_id" in _payload:
         _payload["dealroom_id"] = int(_payload["dealroom_id"])
     res = set(history_ref, _payload)
-
     if res == ERROR:
         # TODO: Raise a Custom Exception (FirestoreException) with the same message when we replace ERROR constant with actual exceptions
         #   (DN-932: https://dealroom.atlassian.net/browse/DN-932)
@@ -489,7 +548,7 @@ def get_people_doc_refs(
 
     Returns:
         [DocumentReference]: if no documents are found, return None, else a list of matching documents.
-    
+
     Examples:
         >>> fc.get_people_doc_refs(db, "dealroom_id", "==", 1169416)[0].to_dict()
         >>> fc.get_people_doc_refs(db, "linkedin", "array_contains", "https://www.linkedin.com/in/vess/")[0].to_dict()
@@ -500,7 +559,7 @@ def get_people_doc_refs(
     query = people_collection_ref.where(field_name, operator, field_value)
     streamed_query = stream(query)
     if streamed_query == ERROR:
-        #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+        # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
         logging.error("Couldn't stream query.")
         return ERROR
 
@@ -512,6 +571,7 @@ def get_people_doc_refs(
 
     return matching_docs
 
+
 def _validate_new_people_doc_payload(payload: dict):
     """Validate the required fields in the payload when creating a new document in the people collection"""
 
@@ -519,6 +579,7 @@ def _validate_new_people_doc_payload(payload: dict):
         raise KeyError("'dealroom_id' must be present payload")
 
     _validate_dealroomid(payload["dealroom_id"])
+
 
 def set_people_doc_ref(
     db: firestore.Client,
@@ -547,7 +608,11 @@ def set_people_doc_ref(
 
     _payload = {**payload}
 
-    people_refs = get_people_doc_refs(db, field_name, operator, field_value) if field_name and operator and field_value else []
+    people_refs = (
+        get_people_doc_refs(db, field_name, operator, field_value)
+        if field_name and operator and field_value
+        else []
+    )
     matching_docs = len(people_refs) if people_refs else 0
 
     # CREATE: If there are not mayching documents in people
@@ -559,14 +624,14 @@ def set_people_doc_ref(
         try:
             _validate_new_people_doc_payload(_payload)
         except (ValueError, KeyError) as ex:
-            #TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+            # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             logging.error(ex)
             return ERROR
         people_doc_ref = people_collection_ref.document()
         operation_status_code = CREATED
     # UPDATE:
     elif matching_docs == 1:
-         # Ensure that dealroom_id is type of number if it appears on the payload
+        # Ensure that dealroom_id is type of number if it appears on the payload
         if "dealroom_id" in _payload:
             _validate_dealroomid(_payload["dealroom_id"])
         people_doc_ref = people_refs[0].reference
