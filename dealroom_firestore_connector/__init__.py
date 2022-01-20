@@ -257,7 +257,7 @@ def get_history_doc_refs(
         >>> doc_refs = get_history_refs(db, "dealroom.co")
     """
 
-    is_valid_dealroom_id = dealroom_id and int(dealroom_id) > 0
+    is_valid_dealroom_id = dealroom_id and str(dealroom_id).isnumeric() and int(dealroom_id) > 0
     if not final_url and not is_valid_dealroom_id:
         raise ValueError(
             "Any of `final_url` or `dealroom_id` need to be used as a unique identifier"
@@ -423,10 +423,20 @@ def set_history_doc_refs(
 
     _payload = {**payload}
 
-    # If finalurl_or_dealroomid is not provided then a new document will be created,
-    # otherwise lookup for the document using both identifiers, final_url & dealroom_id
+    # If finalurl_or_dealroomid is provided:
+    #   - look for documents using ONLY that key
+    # If it was not provided:
+    #   - check if the payload contains final_url or dealroom_id and extract them
+    #   - look for documents matching any of the payload values to update instead of creating
+    # When nothing was found a new doc will be created
     history_refs = {}
     if finalurl_or_dealroomid:
+        if is_dealroom_id := str(finalurl_or_dealroomid).isnumeric():
+            history_refs = get_history_doc_refs(db, dealroom_id=finalurl_or_dealroomid)
+        else:
+            print("match by: "+finalurl_or_dealroomid)
+            history_refs = get_history_doc_refs(db, final_url=finalurl_or_dealroomid)
+    else:
         final_url, dealroom_id = _get_final_url_and_dealroom_id(
             payload, finalurl_or_dealroomid
         )
@@ -456,6 +466,7 @@ def set_history_doc_refs(
     else:
         count_history_refs = 0
 
+    print(f"count: {count_history_refs}")
     # CREATE: If there are not available documents in history
     if count_history_refs == 0:
         # Add any default values to the payload
