@@ -3,10 +3,7 @@ import sys
 import dealroom_firestore_connector as fc
 
 # Connect to staging Firestore
-db = fc.new_connection(
-    project="sustained-hold-288413",
-    credentials_path="cred.json",
-)
+db = fc.new_connection(project="sustained-hold-288413", credentials_path="cred.json",)
 if db == -1:
     # Error. Do something else
     sys.exit()

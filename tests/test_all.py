@@ -113,6 +113,7 @@ def test_set_history_doc_refs_as_deleted():
 
     assert res == UPDATED
 
+
 def test_set_history_doc_refs_existing_by_url_with_wrong_dealroom_id():
     """Create a new document, using a valid but already used final_url (with another dealroom_id), should be ok"""
     db = fc.new_connection(project=TEST_PROJECT)
@@ -120,19 +121,25 @@ def test_set_history_doc_refs_existing_by_url_with_wrong_dealroom_id():
     res = fc.set_history_doc_refs(db, {"final_url": "foo3.bar"}, wrong_dr_id)
     assert res == CREATED
 
+
 def test_set_history_doc_refs_existing_by_url():
     """Update an existing document with dealroom_id=-1, using a the final_url"""
     db = fc.new_connection(project=TEST_PROJECT)
-    fc.set_history_doc_refs(db, {"final_url": "foo4.bar", "dealroom_id":-1})
+    fc.set_history_doc_refs(db, {"final_url": "foo4.bar", "dealroom_id": -1})
     random_field = _get_random_string(10)
-    res = fc.set_history_doc_refs(db, {"test_field": random_field}, finalurl_or_dealroomid="foo4.bar")
+    res = fc.set_history_doc_refs(
+        db, {"test_field": random_field}, finalurl_or_dealroomid="foo4.bar"
+    )
     assert res == UPDATED
+
 
 def test_set_history_doc_refs_existing_by_url_using_payload():
     """Update an existing document with dealroom_id=-1, using a the final_url from the payload"""
     db = fc.new_connection(project=TEST_PROJECT)
-    fc.set_history_doc_refs(db, {"final_url": "foo5.bar", "dealroom_id":-1})
-    res = fc.set_history_doc_refs(db, {"final_url": "foo5.bar", "dealroom_id": randint(1e5, 1e8)})
+    fc.set_history_doc_refs(db, {"final_url": "foo5.bar", "dealroom_id": -1})
+    res = fc.set_history_doc_refs(
+        db, {"final_url": "foo5.bar", "dealroom_id": randint(1e5, 1e8)}
+    )
     assert res == UPDATED
 
 
@@ -141,28 +148,13 @@ def test_set_history_doc_refs_existing_by_url_using_payload():
     [
         ({}, 123, ("", 123)),
         ({}, "dealroom.co", ("dealroom.co", -1)),
-        (
-            {"dealroom_id": 123},
-            "dealroom.co",
-            ("dealroom.co", 123),
-        ),
-        (
-            {"final_url": "dealroom.co"},
-            123,
-            ("dealroom.co", 123),
-        ),
-        (
-            {"final_url": "dealroom.co", "dealroom_id": 123},
-            None,
-            ("dealroom.co", 123),
-        ),
+        ({"dealroom_id": 123}, "dealroom.co", ("dealroom.co", 123),),
+        ({"final_url": "dealroom.co"}, 123, ("dealroom.co", 123),),
+        ({"final_url": "dealroom.co", "dealroom_id": 123}, None, ("dealroom.co", 123),),
     ],
 )
 def test___get_final_url_and_dealroom_id(payload, identifier, expected):
     """It should give valid output for input"""
-    assert_that(
-        fc._get_final_url_and_dealroom_id(
-            payload,
-            identifier,
-        )
-    ).is_equal_to(expected)
+    assert_that(fc._get_final_url_and_dealroom_id(payload, identifier,)).is_equal_to(
+        expected
+    )

@@ -257,7 +257,9 @@ def get_history_doc_refs(
         >>> doc_refs = get_history_refs(db, "dealroom.co")
     """
 
-    is_valid_dealroom_id = dealroom_id and str(dealroom_id).isnumeric() and int(dealroom_id) > 0
+    is_valid_dealroom_id = (
+        dealroom_id and str(dealroom_id).isnumeric() and int(dealroom_id) > 0
+    )
     if not final_url and not is_valid_dealroom_id:
         raise ValueError(
             "Any of `final_url` or `dealroom_id` need to be used as a unique identifier"
@@ -434,7 +436,7 @@ def set_history_doc_refs(
         if is_dealroom_id := str(finalurl_or_dealroomid).isnumeric():
             history_refs = get_history_doc_refs(db, dealroom_id=finalurl_or_dealroomid)
         else:
-            print("match by: "+finalurl_or_dealroomid)
+            print("match by: " + finalurl_or_dealroomid)
             history_refs = get_history_doc_refs(db, final_url=finalurl_or_dealroomid)
     else:
         final_url, dealroom_id = _get_final_url_and_dealroom_id(
@@ -544,10 +546,7 @@ def __log_exception(error_code, ref, identifier, was_retried=False):
 
 
 def get_people_doc_refs(
-    db: firestore.Client,
-    field_name: str,
-    operator: str,
-    field_value,
+    db: firestore.Client, field_name: str, operator: str, field_value,
 ):
     """Query 'people' collection for a document whose 'field_name' has 'operator'
     relation with 'field_value'.
@@ -593,11 +592,7 @@ def _validate_new_people_doc_payload(payload: dict):
 
 
 def set_people_doc_ref(
-    db: firestore.Client,
-    field_name: str,
-    operator: str,
-    field_value,
-    payload: dict,
+    db: firestore.Client, field_name: str, operator: str, field_value, payload: dict,
 ):
     """Updates or Creates a single document from 'people' collection with 'payload' where 'field_name' has 'operator'
     relation with 'field_value'.
