@@ -116,7 +116,8 @@ def test_set_history_doc_refs_as_deleted():
 def test_set_history_doc_refs_existing_by_url_with_wrong_dealroom_id():
     """Create a new document, using a valid but already used final_url (with another dealroom_id), should be ok"""
     db = fc.new_connection(project=TEST_PROJECT)
-    res = fc.set_history_doc_refs(db, {"final_url": "foo3.bar"}, randint(1e5, 1e8))
+    wrong_dr_id = randint(1e5, 1e8)
+    res = fc.set_history_doc_refs(db, {"final_url": "foo3.bar"}, wrong_dr_id)
     assert res == CREATED
 
 def test_set_history_doc_refs_existing_by_url():
