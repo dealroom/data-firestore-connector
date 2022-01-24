@@ -285,6 +285,7 @@ def get_history_doc_refs(
             logging.error("Couldn't stream query.")
             return ERROR
         result["dealroom_id_old"] = [doc.reference for doc in docs]
+        return result
 
     # Add results for matched documents over `final_url`
     if final_url:
@@ -384,21 +385,24 @@ def _validate_update_history_doc_payload(payload: dict):
 def _get_final_url_and_dealroom_id(
     payload: dict, finalurl_or_dealroomid: str = None
 ) -> tuple:
-    """Retrieve the final_url & dealroom_id identifiers,
-    from `payload` and/or `finalurl_or_dealroomid`"""
+    """Retrieve the final_url
+    from `payload` and/or `finalurl_or_dealroomid`
+    but not dealroom_id because
+    - we want to update an existing doc matching by final_url and dealroom_id=-1
+    or
+    - we don't want to override an existing dealroom_id>0 matching by final_url https://dealroom.atlassian.net/browse/DS2-104
+    """
 
     final_url, dealroom_id = "", _NOT_IN_DEALROOM_ENTITY_ID
     # If finalurl_or_dealroomid is not set then try to find them in payload
     if not finalurl_or_dealroomid:
         final_url = payload.get("final_url", None) or final_url
-        dealroom_id = payload.get("dealroom_id", None) or dealroom_id
     # otherwise combine them
     elif is_dealroom_id := str(finalurl_or_dealroomid).isnumeric():
         dealroom_id = finalurl_or_dealroomid
         final_url = payload.get("final_url", None) or final_url
     else:
         final_url = finalurl_or_dealroomid
-        dealroom_id = payload.get("dealroom_id", None) or dealroom_id
 
     return final_url, dealroom_id
 
@@ -423,15 +427,13 @@ def set_history_doc_refs(
 
     _payload = {**payload}
 
-    # If finalurl_or_dealroomid is not provided then a new document will be created,
-    # otherwise lookup for the document using both identifiers, final_url & dealroom_id
     history_refs = {}
-    if finalurl_or_dealroomid:
-        final_url, dealroom_id = _get_final_url_and_dealroom_id(
-            payload, finalurl_or_dealroomid
-        )
 
-        history_refs = get_history_doc_refs(db, final_url, dealroom_id)
+    # lookup for the document using both identifiers, final_url & dealroom_id
+    final_url, dealroom_id = _get_final_url_and_dealroom_id(
+        payload, finalurl_or_dealroomid
+    )
+    history_refs = get_history_doc_refs(db, final_url, dealroom_id)
 
     operation_status_code = ERROR
 
@@ -533,10 +535,7 @@ def __log_exception(error_code, ref, identifier, was_retried=False):
 
 
 def get_people_doc_refs(
-    db: firestore.Client,
-    field_name: str,
-    operator: str,
-    field_value,
+    db: firestore.Client, field_name: str, operator: str, field_value,
 ):
     """Query 'people' collection for a document whose 'field_name' has 'operator'
     relation with 'field_value'.
@@ -582,11 +581,7 @@ def _validate_new_people_doc_payload(payload: dict):
 
 
 def set_people_doc_ref(
-    db: firestore.Client,
-    field_name: str,
-    operator: str,
-    field_value,
-    payload: dict,
+    db: firestore.Client, field_name: str, operator: str, field_value, payload: dict,
 ):
     """Updates or Creates a single document from 'people' collection with 'payload' where 'field_name' has 'operator'
     relation with 'field_value'.

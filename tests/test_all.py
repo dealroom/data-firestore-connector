@@ -3,8 +3,9 @@ import string
 from random import randint
 from assertpy import assert_that
 import dealroom_firestore_connector as fc
+from google.cloud import firestore
 import pytest
-from dealroom_firestore_connector.status_codes import ERROR, SUCCESS
+from dealroom_firestore_connector.status_codes import ERROR, SUCCESS, UPDATED, CREATED
 
 
 def _get_random_string(length):
@@ -50,7 +51,7 @@ def test_set_history_doc_refs_new():
         },
     )
 
-    assert res == SUCCESS
+    assert res == CREATED
 
 
 def test_set_history_doc_refs_new():
@@ -58,7 +59,7 @@ def test_set_history_doc_refs_new():
     db = fc.new_connection(project=TEST_PROJECT)
     res = fc.set_history_doc_refs(db, {"final_url": f"{_get_random_string(10)}.com"})
 
-    assert res == SUCCESS
+    assert res == CREATED
 
 
 def test_set_history_doc_refs_new():
@@ -72,7 +73,7 @@ def test_set_history_doc_refs_new():
         },
     )
 
-    assert res == SUCCESS
+    assert res == CREATED
 
 
 def test_set_history_doc_refs_empty_dealroom_id():
@@ -80,7 +81,7 @@ def test_set_history_doc_refs_empty_dealroom_id():
     db = fc.new_connection(project=TEST_PROJECT)
     random_field = _get_random_string(10)
     res = fc.set_history_doc_refs(db, {"test_field": random_field}, "foo2.bar")
-    assert res == SUCCESS
+    assert res == UPDATED
 
 
 def test_set_history_doc_refs_empty_final_url():
@@ -91,7 +92,7 @@ def test_set_history_doc_refs_empty_final_url():
 
     res = fc.set_history_doc_refs(db, {"test_field": random_field}, EXISTING_DOC_DR_ID)
 
-    assert res == SUCCESS
+    assert res == UPDATED
 
 
 def test_set_history_doc_refs_wrong_dealroom_id():
@@ -111,7 +112,39 @@ def test_set_history_doc_refs_as_deleted():
     EXISTING_DOC_FINAL_URL = "foo2.bar"
     res = fc.set_history_doc_refs(db, {"dealroom_id": "-2"}, EXISTING_DOC_FINAL_URL)
 
-    assert res == SUCCESS
+    assert res == UPDATED
+
+
+def test_set_history_doc_refs_existing_by_url_with_wrong_dealroom_id():
+    """Create a new document, using a valid but already used final_url (with another dealroom_id), should be ok"""
+    db = fc.new_connection(project=TEST_PROJECT)
+    wrong_dr_id = str(randint(1e5, 1e8))
+    res = fc.set_history_doc_refs(db, {"final_url": "foo3.bar"}, wrong_dr_id)
+    assert res == CREATED
+
+
+def test_set_history_doc_refs_existing_by_url():
+    """Update an existing document with dealroom_id=-1, using a the final_url"""
+    db = fc.new_connection(project=TEST_PROJECT)
+    random_field = _get_random_string(10)
+    res = fc.set_history_doc_refs(
+        db, {"test_field": random_field}, finalurl_or_dealroomid="foo4.bar"
+    )
+    assert res == UPDATED
+
+
+def test_set_history_doc_refs_existing_by_url_using_payload():
+    """Update an existing document with dealroom_id=-1, using a the final_url from the payload"""
+    db = fc.new_connection(project=TEST_PROJECT)
+    fc.set_history_doc_refs(db, {"final_url": "foo5.bar", "dealroom_id": -1})
+    dealroom_id = randint(1e5, 1e8)
+    res = fc.set_history_doc_refs(
+        db, {"final_url": "foo5.bar", "dealroom_id": dealroom_id}
+    )
+
+    assert res == UPDATED
+    doc_ref = fc.get_history_doc_refs(db, dealroom_id=dealroom_id)["dealroom_id"][0]
+    doc_ref.delete()
 
 
 @pytest.mark.parametrize(
@@ -119,28 +152,13 @@ def test_set_history_doc_refs_as_deleted():
     [
         ({}, 123, ("", 123)),
         ({}, "dealroom.co", ("dealroom.co", -1)),
-        (
-            {"dealroom_id": 123},
-            "dealroom.co",
-            ("dealroom.co", 123),
-        ),
-        (
-            {"final_url": "dealroom.co"},
-            123,
-            ("dealroom.co", 123),
-        ),
-        (
-            {"final_url": "dealroom.co", "dealroom_id": 123},
-            None,
-            ("dealroom.co", 123),
-        ),
+        ({"dealroom_id": 123}, "dealroom.co", ("dealroom.co", -1),),
+        ({"final_url": "dealroom.co"}, 123, ("dealroom.co", 123),),
+        ({"final_url": "dealroom.co", "dealroom_id": 123}, None, ("dealroom.co", -1),),
     ],
 )
 def test___get_final_url_and_dealroom_id(payload, identifier, expected):
     """It should give valid output for input"""
-    assert_that(
-        fc._get_final_url_and_dealroom_id(
-            payload,
-            identifier,
-        )
-    ).is_equal_to(expected)
+    assert_that(fc._get_final_url_and_dealroom_id(payload, identifier,)).is_equal_to(
+        expected
+    )
