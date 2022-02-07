@@ -109,10 +109,15 @@ def test_set_history_doc_refs_wrong_dealroom_id():
 def test_set_history_doc_refs_as_deleted():
     """Marking an entity as deleted (dealroom_id = -2), should be ok"""
     db = fc.new_connection(project=TEST_PROJECT)
-    EXISTING_DOC_FINAL_URL = "foo2.bar"
-    res = fc.set_history_doc_refs(db, {"dealroom_id": "-2"}, EXISTING_DOC_FINAL_URL)
+    FINAL_URL = "foo7.bar"
+    fc.set_history_doc_refs(
+        db, {"dealroom_id": randint(1e5, 1e8), "final_url": FINAL_URL}
+    )
+    res = fc.set_history_doc_refs(db, {"dealroom_id": "-2"}, FINAL_URL)
 
     assert res == UPDATED
+    doc_ref = fc.get_history_doc_refs(db, final_url="foo7.bar")["final_url"][0]
+    doc_ref.delete()
 
 
 def test_set_history_doc_refs_existing_by_url_with_wrong_dealroom_id():
@@ -145,6 +150,34 @@ def test_set_history_doc_refs_existing_by_url_using_payload():
     assert res == UPDATED
     doc_ref = fc.get_history_doc_refs(db, dealroom_id=dealroom_id)["dealroom_id"][0]
     doc_ref.delete()
+
+
+def test_set_history_doc_refs_for_deleted_company():
+    """Create a document for a new company that appears previously as deleted should be ok."""
+    # Tests this bug https://dealroom.atlassian.net/browse/DS2-154
+    db = fc.new_connection(project=TEST_PROJECT)
+    dealroom_id = randint(1e5, 1e8)
+    res = fc.set_history_doc_refs(
+        db, {"final_url": "foo6.bar", "dealroom_id": dealroom_id}, dealroom_id
+    )
+    # NOTE: if the call doesn't have the dealroom_id as a parameter this fails. Since we removed
+    # the logic to extract the dealroom_id from the payload here: https://dealroom.atlassian.net/browse/DS2-104
+    assert res == CREATED
+    doc_ref = fc.get_history_doc_refs(db, dealroom_id=dealroom_id)["dealroom_id"][0]
+    doc_ref.delete()
+
+
+def test_set_history_doc_refs_for_deleted_company_2():
+    """Update a document for a new company that appears previously as deleted should be ok."""
+    db = fc.new_connection(project=TEST_PROJECT)
+    dealroom_id = 666666666666  # fixed id in firestore
+    random_value = _get_random_string(10)
+    res = fc.set_history_doc_refs(db, {"test_field": random_value}, dealroom_id)
+    assert res == UPDATED
+    final_url = "foo8.bar"  # fixed url in firestore
+    random_value = _get_random_string(10)
+    res = fc.set_history_doc_refs(db, {"test_field": random_value}, final_url)
+    assert res == UPDATED
 
 
 @pytest.mark.parametrize(
