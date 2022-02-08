@@ -407,6 +407,27 @@ def _get_final_url_and_dealroom_id(
     return final_url, dealroom_id
 
 
+def check_for_deleted_profiles(
+    doc_refs, dealroom_id, count_history_refs
+):
+    # https://dealroom.atlassian.net/browse/DS2-154
+    # check all matching docs
+    for doc_ref in doc_refs:
+        doc = doc_ref.get().to_dict()
+        is_a_deleted_entity = doc["dealroom_id"] == _DELETED_DEALROOM_ENTITY_ID
+        dealroom_id_was_already_used = doc.get("dealroom_id_old") == dealroom_id
+        if (
+            is_a_deleted_entity
+            and dealroom_id > 0
+            and not dealroom_id_was_already_used
+        ):
+            # Substract 1 meaning that for the current doc matching this final_url, it was deleted
+            # but this is a new company. In other words, the dealroom id for this company was never
+            # present in the history collection.
+            count_history_refs -= 1
+    return count_history_refs
+
+
 def set_history_doc_refs(
     db: firestore.Client, payload: dict, finalurl_or_dealroomid: str = None
 ) -> None:
@@ -436,6 +457,7 @@ def set_history_doc_refs(
     history_refs = get_history_doc_refs(db, final_url, dealroom_id)
 
     operation_status_code = ERROR
+    key_found = None
 
     if history_refs == ERROR:
         # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
@@ -457,6 +479,12 @@ def set_history_doc_refs(
         key_found = "current_related_urls"
     else:
         count_history_refs = 0
+
+    document_matches_by_final_url = key_found == "final_url"
+    if document_matches_by_final_url:
+        count_history_refs = check_for_deleted_profiles(
+            history_refs[key_found], dealroom_id, count_history_refs
+        )
 
     # CREATE: If there are not available documents in history
     if count_history_refs == 0:
