@@ -408,11 +408,11 @@ def _get_final_url_and_dealroom_id(
 
 
 def check_for_deleted_profiles(
-    key_found, history_refs, dealroom_id, count_history_refs
+    doc_refs, dealroom_id, count_history_refs
 ):
     # https://dealroom.atlassian.net/browse/DS2-154
     # check all matching docs
-    for doc_ref in history_refs[key_found]:
+    for doc_ref in doc_refs:
         doc = doc_ref.get().to_dict()
         is_a_deleted_entity = doc["dealroom_id"] == _DELETED_DEALROOM_ENTITY_ID
         dealroom_id_was_already_used = (
@@ -485,7 +485,7 @@ def set_history_doc_refs(
     document_matches_by_final_url = key_found == "final_url"
     if document_matches_by_final_url:
         count_history_refs = check_for_deleted_profiles(
-            key_found, history_refs, dealroom_id, count_history_refs
+            history_refs[key_found], dealroom_id, count_history_refs
         )
 
     # CREATE: If there are not available documents in history
