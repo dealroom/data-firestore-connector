@@ -415,9 +415,7 @@ def check_for_deleted_profiles(
     for doc_ref in doc_refs:
         doc = doc_ref.get().to_dict()
         is_a_deleted_entity = doc["dealroom_id"] == _DELETED_DEALROOM_ENTITY_ID
-        dealroom_id_was_already_used = (
-            "dealroom_id_old" in doc and doc["dealroom_id_old"] == dealroom_id
-        )
+        dealroom_id_was_already_used = doc.get("dealroom_id_old") == dealroom_id
         if (
             is_a_deleted_entity
             and dealroom_id > 0
