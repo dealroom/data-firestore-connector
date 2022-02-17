@@ -285,7 +285,6 @@ def get_history_doc_refs(
             logging.error("Couldn't stream query.")
             return ERROR
         result["dealroom_id_old"] = [doc.reference for doc in docs]
-        return result
 
     # Add results for matched documents over `final_url`
     if final_url:
@@ -399,7 +398,7 @@ def _get_final_url_and_dealroom_id(
         final_url = payload.get("final_url", None) or final_url
     # otherwise combine them
     elif is_dealroom_id := str(finalurl_or_dealroomid).isnumeric():
-        dealroom_id = finalurl_or_dealroomid
+        dealroom_id = int(finalurl_or_dealroomid)
         final_url = payload.get("final_url", None) or final_url
     else:
         final_url = finalurl_or_dealroomid
@@ -424,6 +423,23 @@ def check_for_deleted_profiles(
             # Substract 1 meaning that for the current doc matching this final_url, it was deleted
             # but this is a new company. In other words, the dealroom id for this company was never
             # present in the history collection.
+            count_history_refs -= 1
+    return count_history_refs
+
+def check_for_in_progress_profiles(
+    doc_refs, dealroom_id, count_history_refs
+):
+    # check all matching docs
+    for doc_ref in doc_refs:
+        doc = doc_ref.get().to_dict()
+        is_an_in_progress_entity = doc["dealroom_id"] == _NOT_IN_DEALROOM_ENTITY_ID
+        if (
+            not is_an_in_progress_entity
+            and dealroom_id > 0
+        ):
+            # Substract 1 meaning that for the current doc matching this final_url, it has already a dealroom_id>0
+            # but this is a new company. In other words, the dealroom id for this company was never
+            # present in the history collection, but a new one with the same final_url has been created.
             count_history_refs -= 1
     return count_history_refs
 
@@ -485,9 +501,12 @@ def set_history_doc_refs(
         count_history_refs = check_for_deleted_profiles(
             history_refs[key_found], dealroom_id, count_history_refs
         )
+        count_history_refs = check_for_in_progress_profiles(
+            history_refs[key_found], dealroom_id, count_history_refs
+        )
 
     # CREATE: If there are not available documents in history
-    if count_history_refs == 0:
+    if count_history_refs <= 0:
         # Add any default values to the payload
         is_dealroom_id = str(finalurl_or_dealroomid).isnumeric()
         # Set `dealroom_id` or `final_url` with a default value from the given identifier
