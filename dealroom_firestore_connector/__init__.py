@@ -398,7 +398,7 @@ def _get_final_url_and_dealroom_id(
         final_url = payload.get("final_url", None) or final_url
     # otherwise combine them
     elif is_dealroom_id := str(finalurl_or_dealroomid).isnumeric():
-        dealroom_id = finalurl_or_dealroomid
+        dealroom_id = int(finalurl_or_dealroomid)
         final_url = payload.get("final_url", None) or final_url
     else:
         final_url = finalurl_or_dealroomid
