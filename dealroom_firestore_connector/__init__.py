@@ -433,7 +433,6 @@ def check_for_in_progress_profiles(
     for doc_ref in doc_refs:
         doc = doc_ref.get().to_dict()
         is_an_in_progress_entity = doc["dealroom_id"] == _NOT_IN_DEALROOM_ENTITY_ID
-        print(dealroom_id)
         if (
             not is_an_in_progress_entity
             and dealroom_id > 0
