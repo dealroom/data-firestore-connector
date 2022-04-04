@@ -208,7 +208,7 @@ def test_set_history_doc_refs_as_deleted_on_id():
     res = fc.set_history_doc_refs(db, {"dealroom_id": "-2"}, FINAL_URL)
 
     assert res == Code.UPDATED
-    doc_ref = fc.get_history_doc_refs(db, final_url="foo7.bar")["final_url"][0]
+    doc_ref = fc.get_history_doc_refs(db, final_url=FINAL_URL)["final_url"][0]
     doc_ref.delete()
 
 
@@ -222,7 +222,7 @@ def test_set_history_doc_refs_as_deleted_on_id_0():
     res = fc.set_history_doc_refs(db, {"dealroom_id": "0"}, FINAL_URL)
 
     assert res == Code.ERROR
-    doc_ref = fc.get_history_doc_refs(db, final_url="foo7.bar")["final_url"][0]
+    doc_ref = fc.get_history_doc_refs(db, final_url=FINAL_URL)["final_url"][0]
     doc_ref.delete()
 
 
@@ -234,7 +234,7 @@ def test_set_history_doc_refs_as_deleted_on_uuid():
     res = fc.set_history_doc_refs(db, {"dealroom_uuid": -2}, FINAL_URL)
 
     assert res == Code.UPDATED
-    doc_ref = fc.get_history_doc_refs(db, final_url="foo77.bar")["final_url"][0]
+    doc_ref = fc.get_history_doc_refs(db, final_url=FINAL_URL)["final_url"][0]
     doc_ref.delete()
 
 
@@ -246,7 +246,7 @@ def test_set_history_doc_refs_as_deleted_on_uuid_0():
     res = fc.set_history_doc_refs(db, {"dealroom_uuid": "0"}, FINAL_URL)
 
     assert res == Code.ERROR
-    doc_ref = fc.get_history_doc_refs(db, final_url="foo77.bar")["final_url"][0]
+    doc_ref = fc.get_history_doc_refs(db, final_url=FINAL_URL)["final_url"][0]
     doc_ref.delete()
 
 
