@@ -259,9 +259,9 @@ def get_history_doc_refs(
 
     is_valid_dealroom_id = dealroom_id and int(dealroom_id) > 0
     if not final_url and not is_valid_dealroom_id:
-        raise ValueError(
-            "Any of `final_url` or `dealroom_id` need to be used as a unique identifier"
-        )
+        # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
+        logging.error("Any of `final_url` or `dealroom_id` need to be used as a unique identifier")
+        return ERROR
 
     collection_ref = db.collection(HISTORY_COLLECTION_PATH)
     result = {}

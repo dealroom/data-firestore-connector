@@ -41,8 +41,8 @@ def test_set_history_doc_refs_wrong_final_url():
     assert res == ERROR
 
 
-def test_set_history_doc_refs_new():
-    """Creating a new document, with empty final_url & dealroom_id, should be ok"""
+def test_set_history_doc_refs_new_empty():
+    """Creating a new document, with empty final_url & dealroom_id, should raise an error"""
     db = fc.new_connection(project=TEST_PROJECT)
     res = fc.set_history_doc_refs(
         db,
@@ -51,10 +51,10 @@ def test_set_history_doc_refs_new():
         },
     )
 
-    assert res == CREATED
+    assert res == ERROR
 
 
-def test_set_history_doc_refs_new():
+def test_set_history_doc_refs_new_valid_url():
     """Creating a new document, with valid final_url & w/o dealroom_id, should be ok"""
     db = fc.new_connection(project=TEST_PROJECT)
     res = fc.set_history_doc_refs(db, {"final_url": f"{_get_random_string(10)}.com"})
@@ -62,7 +62,7 @@ def test_set_history_doc_refs_new():
     assert res == CREATED
 
 
-def test_set_history_doc_refs_new():
+def test_set_history_doc_refs_new_valid_url_id():
     """Creating a new document, with valid final_url & valid dealroom id should be ok"""
     db = fc.new_connection(project=TEST_PROJECT)
     res = fc.set_history_doc_refs(
@@ -76,7 +76,7 @@ def test_set_history_doc_refs_new():
     assert res == CREATED
 
 
-def test_set_history_doc_refs_empty_dealroom_id():
+def test_set_history_doc_refs_empty_dealroom_id_valid_url():
     """Updating a new document, using a valid final_url, should be ok"""
     db = fc.new_connection(project=TEST_PROJECT)
     random_field = _get_random_string(10)
@@ -84,7 +84,7 @@ def test_set_history_doc_refs_empty_dealroom_id():
     assert res == UPDATED
 
 
-def test_set_history_doc_refs_empty_final_url():
+def test_set_history_doc_refs_empty_final_url_valid_id():
     """Updating a new document, using a valid dealroom_id, should be ok"""
     db = fc.new_connection(project=TEST_PROJECT)
     random_field = _get_random_string(10)
@@ -127,12 +127,15 @@ def test_set_history_doc_refs_existing_by_url_with_wrong_dealroom_id():
     res = fc.set_history_doc_refs(db, {"final_url": "foo3.bar"}, wrong_dr_id)
     assert res == CREATED
 
+
 def test_set_history_doc_refs_existing_by_url_with_new_dealroom_id():
     """Update a new document, using a valid but already used final_url (with another dealroom_id=-1), should be ok"""
     db = fc.new_connection(project=TEST_PROJECT)
     new_dr_id = randint(1e5, 1e8)
-    fc.set_history_doc_refs(db, {"final_url": "foo9.bar","dealroom_id":-1})
-    res = fc.set_history_doc_refs(db, {"final_url": "foo9.bar","dealroom_id":new_dr_id}, new_dr_id)
+    fc.set_history_doc_refs(db, {"final_url": "foo9.bar", "dealroom_id": -1})
+    res = fc.set_history_doc_refs(
+        db, {"final_url": "foo9.bar", "dealroom_id": new_dr_id}, new_dr_id
+    )
     assert res == UPDATED
     doc_ref = fc.get_history_doc_refs(db, dealroom_id=new_dr_id)["dealroom_id"][0]
     doc_ref.delete()
@@ -195,13 +198,28 @@ def test_set_history_doc_refs_for_deleted_company_2():
     [
         ({}, 123, ("", 123)),
         ({}, "dealroom.co", ("dealroom.co", -1)),
-        ({"dealroom_id": 123}, "dealroom.co", ("dealroom.co", -1),),
-        ({"final_url": "dealroom.co"}, 123, ("dealroom.co", 123),),
-        ({"final_url": "dealroom.co", "dealroom_id": 123}, None, ("dealroom.co", -1),),
+        (
+            {"dealroom_id": 123},
+            "dealroom.co",
+            ("dealroom.co", -1),
+        ),
+        (
+            {"final_url": "dealroom.co"},
+            123,
+            ("dealroom.co", 123),
+        ),
+        (
+            {"final_url": "dealroom.co", "dealroom_id": 123},
+            None,
+            ("dealroom.co", -1),
+        ),
     ],
 )
 def test___get_final_url_and_dealroom_id(payload, identifier, expected):
     """It should give valid output for input"""
-    assert_that(fc._get_final_url_and_dealroom_id(payload, identifier,)).is_equal_to(
-        expected
-    )
+    assert_that(
+        fc._get_final_url_and_dealroom_id(
+            payload,
+            identifier,
+        )
+    ).is_equal_to(expected)
