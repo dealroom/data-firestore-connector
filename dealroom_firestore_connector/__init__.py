@@ -3,7 +3,7 @@ import logging
 import os
 import traceback
 from time import sleep
-from typing import Any, List, Optional, Tuple, Union, Iterator
+from typing import Any, List, Optional, Tuple, Union, Iterator, Dict
 from datetime import datetime, timezone
 
 from google.cloud import firestore
@@ -309,7 +309,7 @@ def get_history_doc_refs(
     db: firestore.Client,
     final_url: Optional[str] = None,
     dealroom_id: Union[int, str, None] = None,
-) -> dict[str, List[DocumentReference]]:
+) -> Dict[str, List[DocumentReference]]:
     """Match documents on certain fields and return, for each field matched, the
     matching document refs.
 
@@ -577,7 +577,6 @@ def set_history_doc_refs(
     else:
         value = dealroom_id
 
-    print(value)
     history_refs = get_history_doc_refs(db, final_url, value)
     if history_refs == Code.ERROR:
         # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
