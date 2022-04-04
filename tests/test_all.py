@@ -41,6 +41,19 @@ def test_set_history_doc_refs_wrong_final_url():
     assert res == ERROR
 
 
+def test_set_history_doc_refs_new_empty():
+    """Creating a new document, with empty final_url & dealroom_id, should raise an error"""
+    db = fc.new_connection(project=TEST_PROJECT)
+    res = fc.set_history_doc_refs(
+        db,
+        {
+            # An empty doc
+        },
+    )
+
+    assert res == ERROR
+
+
 def test_set_history_doc_refs_new_valid_url():
     """Creating a new document, with valid final_url & w/o dealroom_id, should be ok"""
     db = fc.new_connection(project=TEST_PROJECT)
