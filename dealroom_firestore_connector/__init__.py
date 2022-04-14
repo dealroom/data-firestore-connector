@@ -14,7 +14,7 @@ from dealroom_urlextract import extract, InvalidURLFormat
 from .batch import Batcher
 from .helpers import error_logger, is_valid_id, is_valid_uuid
 from .exceptions import FirestoreConnectorError, InvalidIdentifier, exc_handler
-from .status_codes import Code
+from .status_codes import StatusCode
 from .identifier import DealroomIdentifier, determine_identifier, DealroomEntity
 
 
@@ -97,7 +97,7 @@ def _update_last_edit(doc_ref: DocumentReference) -> None:
 
 
 @exc_handler
-def set(doc_ref: DocumentReference, *args, **kwargs) -> Code:
+def set(doc_ref: DocumentReference, *args, **kwargs) -> StatusCode:
     """Create a new document in Firestore.
 
     If the document is inside the "history" collection also create
@@ -117,7 +117,7 @@ def set(doc_ref: DocumentReference, *args, **kwargs) -> Code:
     try:
         doc_ref.set(*args, **kwargs, merge=True)
         _update_last_edit(doc_ref)
-        return Code.SUCCESS
+        return StatusCode.SUCCESS
 
     except Exception:
         __log_exception(4, doc_ref)
@@ -127,7 +127,7 @@ def set(doc_ref: DocumentReference, *args, **kwargs) -> Code:
             # Retry
             doc_ref.set(*args, **kwargs, merge=True)
             _update_last_edit(doc_ref)
-            return Code.SUCCESS
+            return StatusCode.SUCCESS
 
         except Exception as exc:
             __log_exception(4, doc_ref, True)
@@ -135,7 +135,7 @@ def set(doc_ref: DocumentReference, *args, **kwargs) -> Code:
 
 
 @exc_handler
-def update(doc_ref: DocumentReference, *args, **kwargs) -> Code:
+def update(doc_ref: DocumentReference, *args, **kwargs) -> StatusCode:
     """Update a Firestore document.
 
     Args:
@@ -152,7 +152,7 @@ def update(doc_ref: DocumentReference, *args, **kwargs) -> Code:
     try:
         doc_ref.update(*args, **kwargs)
         _update_last_edit(doc_ref)
-        return Code.SUCCESS
+        return StatusCode.SUCCESS
 
     except Exception:
         __log_exception(2, doc_ref)
@@ -162,7 +162,7 @@ def update(doc_ref: DocumentReference, *args, **kwargs) -> Code:
             # Retry
             doc_ref.update(*args, **kwargs)
             _update_last_edit(doc_ref)
-            return Code.SUCCESS
+            return StatusCode.SUCCESS
 
         except Exception as exc:
             __log_exception(2, doc_ref, True)
@@ -231,9 +231,9 @@ def get_all(base_query, page_size=20000):
 
         query = query.limit(page_size)
         docs = stream(query)
-        if docs == Code.ERROR:
+        if docs == StatusCode.ERROR:
             # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
-            return Code.ERROR
+            return StatusCode.ERROR
 
         results = [doc_snapshot for doc_snapshot in docs]
         sum_results = [*res, *results]
@@ -284,8 +284,8 @@ def _filtered_stream(
     """Like stream, but with filters."""
     query = collection_ref.where(field_path, op_string, value)
     docs = stream(query)
-    if docs == Code.ERROR:
-        raise FirestoreConnectorError("filtered_stream", error_code=Code.ERROR)
+    if docs == StatusCode.ERROR:
+        raise FirestoreConnectorError("filtered_stream", error_code=StatusCode.ERROR)
     return [doc for doc in docs]
 
 
@@ -336,7 +336,7 @@ def get_history_doc_refs(
         logging.error(
             "Any of `final_url` or `dealroom_id` need to be used as a unique identifier"
         )
-        return Code.ERROR
+        return StatusCode.ERROR
 
     try:
         dr_id = determine_identifier(dealroom_id)
@@ -363,7 +363,7 @@ def get_history_doc_refs(
         except InvalidURLFormat as exc:
             # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             logging.error(f"'final_url': {final_url} is not a valid url: {exc}")
-            return Code.ERROR
+            return StatusCode.ERROR
 
         result["final_url"] = _filtered_stream_refs(
             history_ref, "final_url", "==", website_url
@@ -535,7 +535,7 @@ def check_for_in_progress_profiles(
 
 def set_history_doc_refs(
     db: firestore.Client, payload: dict, finalurl_or_dealroomid: str = None
-) -> Code:
+) -> StatusCode:
     """Updates or creates a document in history collection
 
     Args:
@@ -571,11 +571,11 @@ def set_history_doc_refs(
         value = dealroom_id
 
     history_refs = get_history_doc_refs(db, final_url, value)
-    if history_refs == Code.ERROR:
+    if history_refs == StatusCode.ERROR:
         # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
-        return Code.ERROR
+        return StatusCode.ERROR
 
-    operation_status_code = Code.ERROR
+    operation_status_code = StatusCode.ERROR
     key_found = None
 
     if "dealroom_id" in history_refs and len(history_refs["dealroom_id"]) > 0:
@@ -640,9 +640,9 @@ def set_history_doc_refs(
         except (ValueError, KeyError) as ex:
             # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             logging.error(ex)
-            return Code.ERROR
+            return StatusCode.ERROR
         history_ref = history_col.document()
-        operation_status_code = Code.CREATED
+        operation_status_code = StatusCode.CREATED
 
     # UPDATE:
     elif count_history_refs == 1:
@@ -651,29 +651,29 @@ def set_history_doc_refs(
         except ValueError as ex:
             # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             logging.error(ex)
-            return Code.ERROR
+            return StatusCode.ERROR
 
         history_ref = history_refs[key_found][0]
-        operation_status_code = Code.UPDATED
+        operation_status_code = StatusCode.UPDATED
     # If more than one document were found then it's an error.
     else:
         # TODO: Raise a Custom Exception (DuplicateDocumentsException) with the same message when we replace ERROR constant with actual exceptions
         #   (DN-932: https://dealroom.atlassian.net/browse/DN-932)
         logging.error("Found more than one documents to update for this payload")
-        return Code.ERROR
+        return StatusCode.ERROR
 
     # Ensure that dealroom_id is type of number
     if "dealroom_id" in _payload:
         _payload["dealroom_id"] = int(_payload["dealroom_id"])
 
     res = set(history_ref, _payload)
-    if res == Code.ERROR:
+    if res == StatusCode.ERROR:
         # TODO: Raise a Custom Exception (FirestoreException) with the same message when we replace ERROR constant with actual exceptions
         #   (DN-932: https://dealroom.atlassian.net/browse/DN-932)
         logging.error(
             f"Couldn't `set` document {finalurl_or_dealroomid}. Please check logs above."
         )
-        return Code.ERROR
+        return StatusCode.ERROR
 
     return operation_status_code
 
@@ -766,7 +766,7 @@ def set_people_doc_ref(
     operator: str,
     field_value,
     payload: dict,
-) -> Code:
+) -> StatusCode:
     """Updates or Creates a single document from 'people' collection with 'payload' where 'field_name' has 'operator'
     relation with 'field_value'.
 
@@ -807,9 +807,9 @@ def set_people_doc_ref(
         except (ValueError, KeyError) as ex:
             # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
             logging.error(ex)
-            return Code.ERROR
+            return StatusCode.ERROR
         people_doc_ref = people_collection_ref.document()
-        operation_status_code = Code.CREATED
+        operation_status_code = StatusCode.CREATED
 
     # UPDATE:
     elif matching_docs == 1:
@@ -817,21 +817,21 @@ def set_people_doc_ref(
         if "dealroom_id" in _payload:
             _validate_dealroom_id(_payload["dealroom_id"])
         people_doc_ref = people_refs[0].reference
-        operation_status_code = Code.UPDATED
+        operation_status_code = StatusCode.UPDATED
     # If more than one document were found then it's an error.
     else:
         # TODO: Raise a Custom Exception (DuplicateDocumentsException) with the same message when we replace ERROR constant with actual exceptions
         #   (DN-932: https://dealroom.atlassian.net/browse/DN-932)
         logging.error("Found more than one documents to update for this payload")
-        return Code.ERROR
+        return StatusCode.ERROR
 
     res = set(people_doc_ref, _payload)
-    if res == Code.ERROR:
+    if res == StatusCode.ERROR:
         # TODO: Raise a Custom Exception (FirestoreException) with the same message when we replace ERROR constant with actual exceptions
         #   (DN-932: https://dealroom.atlassian.net/browse/DN-932)
         logging.error(
             f"Couldn't `set` document {people_doc_ref.id}. Please check logs above."
         )
-        return Code.ERROR
+        return StatusCode.ERROR
 
     return operation_status_code

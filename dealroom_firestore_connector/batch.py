@@ -6,7 +6,7 @@ from google.api_core.exceptions import InvalidArgument
 from google.cloud import firestore
 
 from .helpers import error_logger
-from .status_codes import Code
+from .status_codes import StatusCode
 from datetime import datetime, timezone
 
 
@@ -104,10 +104,10 @@ class Batcher(firestore.WriteBatch):
             # Reset counter after a succesfull commit, to keep monitoring.
             self.__total_writes = 0
 
-            return Code.SUCCESS
+            return StatusCode.SUCCESS
         except Exception as exc:
             if retry:
                 return self.commit(retry=False)
             else:
                 error_logger("Failed to batch commit.")
-                return Code.ERROR
+                return StatusCode.ERROR

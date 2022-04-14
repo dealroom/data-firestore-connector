@@ -12,7 +12,7 @@ from random import choice, randint
 import pytest
 from assertpy import assert_that
 import dealroom_firestore_connector as fc
-from dealroom_firestore_connector.status_codes import Code
+from dealroom_firestore_connector.status_codes import StatusCode
 
 
 def _get_random_string(length: int) -> str:
@@ -39,7 +39,7 @@ def test_set_history_doc_refs_empty_final_url():
     # TODO: Use it as soon as firestore-connector will raise a proper Error
     # with pytest.raises(KeyError, match=r"'final_url'"):
     res = fc.set_history_doc_refs(db, {"dealroom_id": "123123"})
-    assert res == Code.ERROR
+    assert res == StatusCode.ERROR
 
 
 def test_set_history_doc_refs_empty_final_url_w_uuid():
@@ -48,7 +48,7 @@ def test_set_history_doc_refs_empty_final_url_w_uuid():
     # TODO: Use it as soon as firestore-connector will raise a proper Error
     # with pytest.raises(KeyError, match=r"'final_url'"):
     res = fc.set_history_doc_refs(db, {"dealroom_uuid": uuid()})
-    assert res == Code.ERROR
+    assert res == StatusCode.ERROR
 
 
 def test_set_history_doc_refs_wrong_final_url():
@@ -59,7 +59,7 @@ def test_set_history_doc_refs_wrong_final_url():
     res = fc.set_history_doc_refs(
         db, {"final_url": "asddsadsdsd", "dealroom_id": "123123"}
     )
-    assert res == Code.ERROR
+    assert res == StatusCode.ERROR
 
 
 def test_set_history_doc_refs_wrong_final_url_w_uuid():
@@ -70,7 +70,7 @@ def test_set_history_doc_refs_wrong_final_url_w_uuid():
     res = fc.set_history_doc_refs(
         db, {"final_url": "asddsadsdsd", "dealroom_uuid": uuid()}
     )
-    assert res == Code.ERROR
+    assert res == StatusCode.ERROR
 
 
 def test_set_history_doc_refs_new_empty():
@@ -78,14 +78,14 @@ def test_set_history_doc_refs_new_empty():
     db = fc.new_connection(project=TEST_PROJECT)
     empty_doc_payload = {}
     res = fc.set_history_doc_refs(db, empty_doc_payload)
-    assert res == Code.ERROR
+    assert res == StatusCode.ERROR
 
 
 def test_set_history_doc_refs_new_valid_url():
     """Creating a new document, with valid final_url & w/o dealroom_id, should be ok"""
     db = fc.new_connection(project=TEST_PROJECT)
     res = fc.set_history_doc_refs(db, {"final_url": f"{_get_random_string(10)}.com"})
-    assert res == Code.CREATED
+    assert res == StatusCode.CREATED
 
 
 def test_set_history_doc_refs_new_valid_url_id():
@@ -99,7 +99,7 @@ def test_set_history_doc_refs_new_valid_url_id():
         },
     )
 
-    assert res == Code.CREATED
+    assert res == StatusCode.CREATED
 
 
 def test_set_history_doc_refs_new_valid_url_uuid():
@@ -113,7 +113,7 @@ def test_set_history_doc_refs_new_valid_url_uuid():
         },
     )
 
-    assert res == Code.CREATED
+    assert res == StatusCode.CREATED
 
 
 def test_set_history_doc_refs_new_valid_url_uuid_as_id():
@@ -127,7 +127,7 @@ def test_set_history_doc_refs_new_valid_url_uuid_as_id():
         },
     )
 
-    assert res == Code.ERROR
+    assert res == StatusCode.ERROR
 
 
 def test_set_history_doc_refs_new_valid_url_id_as_uuid():
@@ -141,7 +141,7 @@ def test_set_history_doc_refs_new_valid_url_id_as_uuid():
         },
     )
 
-    assert res == Code.ERROR
+    assert res == StatusCode.ERROR
 
 
 def test_set_history_doc_refs_empty_dealroom_id_valid_url():
@@ -149,7 +149,7 @@ def test_set_history_doc_refs_empty_dealroom_id_valid_url():
     db = fc.new_connection(project=TEST_PROJECT)
     random_field = _get_random_string(10)
     res = fc.set_history_doc_refs(db, {"test_field": random_field}, "foo2.bar")
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
 
 
 def test_set_history_doc_refs_empty_final_url_valid_id():
@@ -160,7 +160,7 @@ def test_set_history_doc_refs_empty_final_url_valid_id():
 
     res = fc.set_history_doc_refs(db, {"test_field": random_field}, EXISTING_DOC_DR_ID)
 
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
 
 
 def test_set_history_doc_refs_empty_final_url_valid_uuid():
@@ -173,7 +173,7 @@ def test_set_history_doc_refs_empty_final_url_valid_uuid():
         db, {"test_field": random_field}, EXISTING_DOC_DR_UUID
     )
 
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
 
 
 def test_set_history_doc_refs_wrong_dealroom_id():
@@ -184,7 +184,7 @@ def test_set_history_doc_refs_wrong_dealroom_id():
     res = fc.set_history_doc_refs(
         db, {"final_url": f"{_get_random_string(10)}.com", "dealroom_id": "foobar"}
     )
-    assert res == Code.ERROR
+    assert res == StatusCode.ERROR
 
 
 def test_set_history_doc_refs_wrong_dealroom_uuid():
@@ -195,7 +195,7 @@ def test_set_history_doc_refs_wrong_dealroom_uuid():
     res = fc.set_history_doc_refs(
         db, {"final_url": f"{_get_random_string(10)}.com", "dealroom_uuid": "foobar"}
     )
-    assert res == Code.ERROR
+    assert res == StatusCode.ERROR
 
 
 def test_set_history_doc_refs_as_deleted_on_id():
@@ -207,7 +207,7 @@ def test_set_history_doc_refs_as_deleted_on_id():
     )
     res = fc.set_history_doc_refs(db, {"dealroom_id": "-2"}, FINAL_URL)
 
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
     doc_ref = fc.get_history_doc_refs(db, final_url=FINAL_URL)["final_url"][0]
     doc_ref.delete()
 
@@ -221,7 +221,7 @@ def test_set_history_doc_refs_as_deleted_on_id_0():
     )
     res = fc.set_history_doc_refs(db, {"dealroom_id": "0"}, FINAL_URL)
 
-    assert res == Code.ERROR
+    assert res == StatusCode.ERROR
     doc_ref = fc.get_history_doc_refs(db, final_url=FINAL_URL)["final_url"][0]
     doc_ref.delete()
 
@@ -233,7 +233,7 @@ def test_set_history_doc_refs_as_deleted_on_uuid():
     fc.set_history_doc_refs(db, {"dealroom_uuid": uuid(), "final_url": FINAL_URL})
     res = fc.set_history_doc_refs(db, {"dealroom_uuid": -2}, FINAL_URL)
 
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
     doc_ref = fc.get_history_doc_refs(db, final_url=FINAL_URL)["final_url"][0]
     doc_ref.delete()
 
@@ -245,7 +245,7 @@ def test_set_history_doc_refs_as_deleted_on_uuid_0():
     fc.set_history_doc_refs(db, {"dealroom_uuid": uuid(), "final_url": FINAL_URL})
     res = fc.set_history_doc_refs(db, {"dealroom_uuid": "0"}, FINAL_URL)
 
-    assert res == Code.ERROR
+    assert res == StatusCode.ERROR
     doc_ref = fc.get_history_doc_refs(db, final_url=FINAL_URL)["final_url"][0]
     doc_ref.delete()
 
@@ -255,7 +255,7 @@ def test_set_history_doc_refs_existing_by_url_with_wrong_dealroom_id():
     db = fc.new_connection(project=TEST_PROJECT)
     wrong_dr_id = randint(1e5, 1e8)
     res = fc.set_history_doc_refs(db, {"final_url": "foo3.bar"}, wrong_dr_id)
-    assert res == Code.CREATED
+    assert res == StatusCode.CREATED
 
 
 def test_set_history_doc_refs_existing_by_url_with_wrong_dealroom_uuid():
@@ -263,7 +263,7 @@ def test_set_history_doc_refs_existing_by_url_with_wrong_dealroom_uuid():
     db = fc.new_connection(project=TEST_PROJECT)
     wrong_dr_uuid = uuid()
     res = fc.set_history_doc_refs(db, {"final_url": "foo33.bar"}, wrong_dr_uuid)
-    assert res == Code.CREATED
+    assert res == StatusCode.CREATED
 
 
 def test_set_history_doc_refs_existing_by_url_with_new_dealroom_id():
@@ -274,7 +274,7 @@ def test_set_history_doc_refs_existing_by_url_with_new_dealroom_id():
     res = fc.set_history_doc_refs(
         db, {"final_url": "foo9.bar", "dealroom_id": new_dr_id}, new_dr_id
     )
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
     doc_ref = fc.get_history_doc_refs(db, dealroom_id=new_dr_id)["dealroom_id"][0]
     doc_ref.delete()
 
@@ -287,7 +287,7 @@ def test_set_history_doc_refs_existing_by_url_with_new_dealroom_uuid():
     res = fc.set_history_doc_refs(
         db, {"final_url": "foo99.bar", "dealroom_uuid": new_dr_uuid}, new_dr_uuid
     )
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
     doc_ref = fc.get_history_doc_refs(db, dealroom_id=new_dr_uuid)["dealroom_uuid"][0]
     doc_ref.delete()
 
@@ -299,7 +299,7 @@ def test_set_history_doc_refs_existing_by_url():
     res = fc.set_history_doc_refs(
         db, {"test_field": random_field}, finalurl_or_dealroomid="foo4.bar"
     )
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
 
 
 def test_set_history_doc_refs_existing_by_url_using_payload_w_id():
@@ -311,7 +311,7 @@ def test_set_history_doc_refs_existing_by_url_using_payload_w_id():
         db, {"final_url": "foo5.bar", "dealroom_id": dealroom_id}
     )
 
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
     doc_ref = fc.get_history_doc_refs(db, dealroom_id=dealroom_id)["dealroom_id"][0]
     doc_ref.delete()
 
@@ -326,7 +326,7 @@ def test_set_history_doc_refs_existing_by_url_using_payload_w_uuid():
         db, {"final_url": "foo55.bar", "dealroom_uuid": dealroom_uuid}
     )
 
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
     doc_ref = fc.get_history_doc_refs(db, dealroom_id=dealroom_uuid)["dealroom_uuid"][0]
     doc_ref.delete()
 
@@ -344,7 +344,7 @@ def test_set_history_doc_refs_for_deleted_company_w_id():
     doc_ref.delete()
     # NOTE: if the call doesn't have the dealroom_id as a parameter this fails. Since we removed
     # the logic to extract the dealroom_id from the payload here: https://dealroom.atlassian.net/browse/DS2-104
-    assert res == Code.CREATED
+    assert res == StatusCode.CREATED
 
 
 def test_set_history_doc_refs_for_deleted_company_w_uuid():
@@ -360,7 +360,7 @@ def test_set_history_doc_refs_for_deleted_company_w_uuid():
     doc_ref.delete()
     # NOTE: if the call doesn't have the dealroom_id as a parameter this fails. Since we removed
     # the logic to extract the dealroom_id from the payload here: https://dealroom.atlassian.net/browse/DS2-104
-    assert res == Code.CREATED
+    assert res == StatusCode.CREATED
 
 
 def test_set_history_doc_refs_for_deleted_company_w_id_2():
@@ -371,13 +371,13 @@ def test_set_history_doc_refs_for_deleted_company_w_id_2():
     dealroom_id = 666666666666
     random_value = _get_random_string(10)
     res = fc.set_history_doc_refs(db, {"test_field": random_value}, dealroom_id)
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
 
     # fixed url in firestore
     final_url = "foo8.bar"
     random_value = _get_random_string(10)
     res = fc.set_history_doc_refs(db, {"test_field": random_value}, final_url)
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
 
 
 def test_set_history_doc_refs_for_deleted_company_w_uuid_2():
@@ -388,13 +388,13 @@ def test_set_history_doc_refs_for_deleted_company_w_uuid_2():
     dealroom_uuid = "49ada2cf-e234-4fa5-937d-1d65a9bbe2b0"
     random_value = _get_random_string(10)
     res = fc.set_history_doc_refs(db, {"test_field": random_value}, dealroom_uuid)
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
 
     # fixed url in firestore
     final_url = "foo88.bar"
     random_value = _get_random_string(10)
     res = fc.set_history_doc_refs(db, {"test_field": random_value}, final_url)
-    assert res == Code.UPDATED
+    assert res == StatusCode.UPDATED
 
 
 @pytest.mark.parametrize(

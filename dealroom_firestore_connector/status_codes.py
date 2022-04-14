@@ -1,7 +1,7 @@
 from enum import Enum
 
 
-class Code(int, Enum):
+class StatusCode(int, Enum):
 
     """Container for codes that encode the result of firestore-connector operations."""
 

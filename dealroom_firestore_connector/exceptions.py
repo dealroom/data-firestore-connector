@@ -1,6 +1,6 @@
 from functools import wraps
 from typing import Callable, Optional, Any
-from .status_codes import Code
+from .status_codes import StatusCode
 
 
 class FirestoreConnectorError(Exception):
@@ -38,6 +38,6 @@ def exc_handler(func: Callable) -> Callable:
             return func(*args, **kwargs)
         except FirestoreConnectorError as exc:
             print(f"{func.__class__.__name__}: {exc.__class__.__name__}, {exc}")
-            return Code.ERROR
+            return StatusCode.ERROR
 
     return wrapper
