@@ -414,17 +414,15 @@ def _validate_new_history_doc_payload(payload: dict) -> None:
         raise KeyError("'final_url' must be present in payload")
     _validate_final_url(payload["final_url"])
 
-    if "dealroom_id" not in payload:
-        if "dealroom_uuid" not in payload:
-            raise KeyError(
-                "at least one of 'dealroom_id', 'dealroom_uuid' must be present in payload"
-            )
-        else:
-            _validate_dealroom_uuid(payload["dealroom_uuid"])
-    else:
+    if "dealroom_id" not in payload and "dealroom_uuid" not in payload:
+        raise KeyError(
+            "at least one of 'dealroom_id', 'dealroom_uuid' must be present in payload"
+        )
+
+    if "dealroom_id" in payload:
         _validate_dealroom_id(payload["dealroom_id"])
-        if "dealroom_uuid" in payload:
-            _validate_dealroom_uuid(payload["dealroom_uuid"])
+    if "dealroom_uuid" in payload:
+        _validate_dealroom_uuid(payload["dealroom_uuid"])
 
     # Validate that there is one of final_url, dealroom_id, dealroom_uuid as a unique identifier
     empty_final_url = not payload.get("final_url")
