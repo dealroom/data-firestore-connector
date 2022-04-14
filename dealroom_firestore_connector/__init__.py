@@ -498,7 +498,7 @@ def check_for_deleted_profiles(
         if not doc:
             continue
 
-        is_a_deleted_entity = doc[field_name] == DealroomEntity.DELETED
+        is_a_deleted_entity = doc.get(field_name) == DealroomEntity.DELETED
         # this check is useless, but we'll keep it
         dealroom_id_was_already_used = doc.get(field_name_old) == value
         if is_a_deleted_entity and not dealroom_id_was_already_used:
@@ -517,14 +517,14 @@ def check_for_in_progress_profiles(
     """Decrease the input counter for any doc in input list that represents an
     in-progress entity (id = -1).
     """
+    field_name = identifier.field_name
+
     for doc_ref in doc_refs:
         doc = doc_ref.get().to_dict()
         if not doc:
             continue
 
-        is_an_in_progress_entity = (
-            doc[identifier.field_name] == DealroomEntity.NOT_IN_DB
-        )
+        is_an_in_progress_entity = doc.get(field_name) == DealroomEntity.NOT_IN_DB
         if not is_an_in_progress_entity:
             # Substract 1 meaning that for the current doc matching this final_url, it has already a dealroom_id>0
             # but this is a new company. In other words, the dealroom id for this company was never
