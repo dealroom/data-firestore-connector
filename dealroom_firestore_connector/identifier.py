@@ -1,14 +1,18 @@
 from __future__ import annotations
 from typing import Union, Optional
+from enum import Enum
 from .helpers import is_valid_uuid, is_valid_id
 from .exceptions import InvalidIdentifier
 
 
-# We mark the deleted entities from DR database with -2 entity so we can easily identify them.
-DELETED_DEALROOM_ENTITY_ID = -2
+class DealroomEntity(int, Enum):
 
-# We mark the entities that don't exist in DR with -1.
-NOT_IN_DEALROOM_ENTITY_ID = -1
+    """Container for special values for Dealroom ID/UUID in Firestore documents."""
+
+    # We mark the deleted entities from DR database with -2 entity so we can easily identify them.
+    DELETED = -2
+    # We mark the entities that don't exist in DR with -1.
+    NOT_IN_DB = -1
 
 
 _FIELD_NAME_UUID = "dealroom_uuid"

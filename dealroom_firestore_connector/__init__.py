@@ -15,12 +15,7 @@ from .batch import Batcher
 from .helpers import error_logger, is_valid_id, is_valid_uuid
 from .exceptions import FirestoreConnectorError, InvalidIdentifier, exc_handler
 from .status_codes import Code
-from .identifier import (
-    DealroomIdentifier,
-    determine_identifier,
-    DELETED_DEALROOM_ENTITY_ID,
-    NOT_IN_DEALROOM_ENTITY_ID,
-)
+from .identifier import DealroomIdentifier, determine_identifier, DealroomEntity
 
 
 # Time to sleep in seconds when a exception occurrs until retrying
@@ -346,7 +341,6 @@ def get_history_doc_refs(
     try:
         dr_id = determine_identifier(dealroom_id)
     except InvalidIdentifier as exc:
-        print(exc)
         dr_id = None
 
     history_ref = db.collection(HISTORY_COLLECTION_PATH)
@@ -435,12 +429,11 @@ def _validate_new_history_doc_payload(payload: dict) -> None:
     # Validate that there is one of final_url, dealroom_id, dealroom_uuid as a unique identifier
     empty_final_url = not payload.get("final_url")
     empty_dealroom_id = (
-        payload.get("dealroom_id", NOT_IN_DEALROOM_ENTITY_ID)
-        == NOT_IN_DEALROOM_ENTITY_ID
+        payload.get("dealroom_id", DealroomEntity.NOT_IN_DB) == DealroomEntity.NOT_IN_DB
     )
     empty_dealroom_uuid = (
-        payload.get("dealroom_uuid", NOT_IN_DEALROOM_ENTITY_ID)
-        == NOT_IN_DEALROOM_ENTITY_ID
+        payload.get("dealroom_uuid", DealroomEntity.NOT_IN_DB)
+        == DealroomEntity.NOT_IN_DB
     )
     if empty_final_url and empty_dealroom_id and empty_dealroom_uuid:
         raise ValueError(
@@ -470,7 +463,7 @@ def _get_final_url_and_dealroom_id(
     - or we don't want to override an existing dealroom_id>0 matching by final_url https://dealroom.atlassian.net/browse/DS2-104
     """
 
-    final_url, dealroom_id = "", NOT_IN_DEALROOM_ENTITY_ID
+    final_url, dealroom_id = "", DealroomEntity.NOT_IN_DB.value
 
     # If finalurl_or_dealroomid is not set then try to find them in payload
     if not finalurl_or_dealroomid:
@@ -505,7 +498,7 @@ def check_for_deleted_profiles(
         if not doc:
             continue
 
-        is_a_deleted_entity = doc[field_name] == DELETED_DEALROOM_ENTITY_ID
+        is_a_deleted_entity = doc[field_name] == DealroomEntity.DELETED
         # this check is useless, but we'll keep it
         dealroom_id_was_already_used = doc.get(field_name_old) == value
         if is_a_deleted_entity and not dealroom_id_was_already_used:
@@ -530,7 +523,7 @@ def check_for_in_progress_profiles(
             continue
 
         is_an_in_progress_entity = (
-            doc[identifier.field_name] == NOT_IN_DEALROOM_ENTITY_ID
+            doc[identifier.field_name] == DealroomEntity.NOT_IN_DB
         )
         if not is_an_in_progress_entity:
             # Substract 1 meaning that for the current doc matching this final_url, it has already a dealroom_id>0
@@ -635,8 +628,8 @@ def set_history_doc_refs(
             }
         else:
             _payload = {
-                "dealroom_id": NOT_IN_DEALROOM_ENTITY_ID,
-                "dealroom_uuid": NOT_IN_DEALROOM_ENTITY_ID,
+                "dealroom_id": DealroomEntity.NOT_IN_DB.value,
+                "dealroom_uuid": DealroomEntity.NOT_IN_DB.value,
                 "final_url": finalurl_or_dealroomid,
                 **payload,
             }
@@ -804,8 +797,8 @@ def set_people_doc_ref(
     # CREATE: If there are not matching documents in people
     if matching_docs == 0:
         # Add any default values to the payload
-        _payload["dealroom_id"] = NOT_IN_DEALROOM_ENTITY_ID
-        _payload["dealroom_uuid"] = NOT_IN_DEALROOM_ENTITY_ID
+        _payload["dealroom_id"] = DealroomEntity.NOT_IN_DB.value
+        _payload["dealroom_uuid"] = DealroomEntity.NOT_IN_DB.value
 
         # Validate that the new document will have the minimum required fields
         try:
