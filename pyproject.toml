@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "dealroom-firestore-connector"
-version = "1.0.17"
+version = "1.0.30"
 description = "A wrapper class for accessing Google Cloud Firestore based on our business logic"
 authors = ["Data team <data@dealroom.co>"]
 
@@ -10,6 +10,10 @@ google-cloud-firestore = "^2.0.2"
 dealroom-urlextract = {git = "https://github.com/dealroom/data-urlextract", rev = "main"}
 
 [tool.poetry.dev-dependencies]
+black = "^22.1.0"
+pytest = "^7.1.1"
+assertpy = "^1.1"
+ipython = "^8.2.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
