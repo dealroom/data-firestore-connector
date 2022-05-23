@@ -794,13 +794,8 @@ def set_people_doc_ref(
 
     # CREATE: If there are not matching documents in people
     if matching_docs == 0:
-        # Add any default values to the payload
-        _payload["dealroom_id"] = DealroomEntity.NOT_IN_DB.value
-        _payload["dealroom_uuid"] = DealroomEntity.NOT_IN_DB.value
-
         # Validate that the new document will have the minimum required fields
         try:
-            # Why is this even called? we set a value and then check that it is correct???
             _validate_new_people_doc_payload(_payload)
         except (ValueError, KeyError) as ex:
             # TODO: raise Custom Exception (DN-932: https://dealroom.atlassian.net/browse/DN-932)
