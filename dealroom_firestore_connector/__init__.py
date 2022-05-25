@@ -794,6 +794,12 @@ def set_people_doc_ref(
 
     # CREATE: If there are not matching documents in people
     if matching_docs == 0:
+        # Add any default values to the payload if non are already there
+        if "dealroom_id" not in _payload:
+            if "dealroom_uuid" not in _payload:
+                _payload["dealroom_id"] = DealroomEntity.NOT_IN_DB.value
+                _payload["dealroom_uuid"] = DealroomEntity.NOT_IN_DB.value
+
         # Validate that the new document will have the minimum required fields
         try:
             _validate_new_people_doc_payload(_payload)
