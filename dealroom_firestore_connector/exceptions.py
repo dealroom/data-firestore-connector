@@ -39,13 +39,9 @@ def exc_handler(func: Callable) -> Callable:
         try:
             return func(*args, **kwargs)
         except FirestoreConnectorError as exc:
-            print(f"{func.__class__.__name__}: {exc.__class__.__name__}, {exc}")
-            return StatusCode.ERROR
-        except InvalidArgument as exc:
-            # this error is difficult to track, at least in this way we have a clue why or which process is raising it
             print(
                 f"{func.__class__.__name__}: {exc.__class__.__name__}, {exc} - args = {json.dumps(args, default=str)} - kwargs = {json.dumps(kwargs, default=str)}"
             )
-            raise exc
+            return StatusCode.ERROR
 
     return wrapper
