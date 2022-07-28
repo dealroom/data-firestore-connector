@@ -1,5 +1,7 @@
+import json
 from functools import wraps
 from typing import Callable, Optional, Any
+from google.api_core.exceptions import InvalidArgument
 from .status_codes import StatusCode
 
 
@@ -39,5 +41,11 @@ def exc_handler(func: Callable) -> Callable:
         except FirestoreConnectorError as exc:
             print(f"{func.__class__.__name__}: {exc.__class__.__name__}, {exc}")
             return StatusCode.ERROR
+        except InvalidArgument as exc:
+            # this error is difficult to track, at least in this way we have a clue why or which process is raising it
+            print(
+                f"{func.__class__.__name__}: {exc.__class__.__name__}, {exc} - args = {json.dumps(args, default=str)} - kwargs = {json.dumps(kwargs, default=str)}"
+            )
+            raise exc
 
     return wrapper
