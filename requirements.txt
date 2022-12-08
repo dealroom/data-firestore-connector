@@ -1,5 +1,5 @@
 cachetools==5.0.0
-certifi==2021.10.8
+certifi==2022.12.7
 charset-normalizer==2.0.12
 dealroom-urlextract @ git+https://github.com/dealroom/data-urlextract@main
 filelock==3.6.0
